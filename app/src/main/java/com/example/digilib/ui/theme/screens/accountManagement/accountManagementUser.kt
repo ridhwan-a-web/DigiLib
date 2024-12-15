@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,6 +44,7 @@ fun AccountManagementScreenUser(
     navController: NavController,
     authViewModel: AuthViewModel = viewModel()
 ){
+    val context = LocalContext.current
     val currentUser = authViewModel.getCurrentUserDetails()
     val authState by authViewModel.authState.collectAsState()
     var showPasswordDialog by remember { mutableStateOf(false) }
@@ -66,18 +68,16 @@ fun AccountManagementScreenUser(
                     Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") // Change icon to ArrowBack
                 }
             },
-            title = { Text(text = "LitSphere") },
+            title = { Text(text = "DigiLib") },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Cyan,
                 titleContentColor = Color.Blue,
                 navigationIconContentColor = Color.Red
             ),
             actions = {
-                IconButton(onClick = {}) {
-                    Icon(imageVector = Icons.Filled.Search, contentDescription = "Search Here")
-                }
                 IconButton(onClick = {
                     authViewModel.signOut(navController)
+                    authViewModel.clearLoginState(context)
                     navController.navigate(ROUTE_ADMIN_LOGIN)
                 }) {
                     Icon(imageVector = Icons.Filled.ExitToApp, contentDescription = "LogOut")
@@ -107,6 +107,7 @@ fun AccountManagementScreenUser(
         // Logout
         Button(onClick = {
             authViewModel.signOut(navController)
+            authViewModel.clearLoginState(context)
             navController.navigate(ROUTE_USER_LOGIN) // Navigate to login
         }) {
             Text("Log Out")

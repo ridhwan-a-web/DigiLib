@@ -7,6 +7,7 @@ plugins {
 
 }
 
+
 android {
     namespace = "com.example.digilib"
     compileSdk = 35
@@ -57,6 +58,7 @@ dependencies {
     implementation(libs.coil.compose)
 
 
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -74,13 +76,14 @@ dependencies {
     implementation(libs.androidx.foundation.android)
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.storage)
-    implementation(libs.firebase.storage)
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.play.services.base)
     implementation(libs.play.services.base)
     implementation(libs.play.services.base)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.media3.common.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,9 +91,20 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation ("androidx.compose.ui:ui-text:1.7.5")
+    implementation ("androidx.compose.ui:ui-text:1.7.6")
     implementation ("androidx.compose.material3:material3:1.3.1")
     implementation("androidx.compose.material3:material3:1.1.2")
 
+//    google play services
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation(libs.play.services.location)
 
+//    dependencies of the splash screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }
+
+
+
+
+
+

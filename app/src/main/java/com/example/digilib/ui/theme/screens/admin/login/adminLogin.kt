@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -56,6 +57,7 @@ fun AdminLoginScreen(navController: NavController, authViewModel: AuthViewModel 
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
 
     val authState by authViewModel.authState.collectAsState()
@@ -165,6 +167,7 @@ fun AdminLoginScreen(navController: NavController, authViewModel: AuthViewModel 
                     errorMessage = "Invalid email format"
                 } else {
                     authViewModel.adminLogin(email, password, navController)
+                    authViewModel.saveLoginState(context, userRole = "", userId = "")
                 }
             },
             colors = ButtonDefaults.buttonColors(

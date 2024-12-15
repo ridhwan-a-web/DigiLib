@@ -57,9 +57,7 @@ fun AddBookScreen(navController: NavController, viewModel: BookViewModel, authVi
             },
             title = { Text(text = "Add Book") },
             actions = {
-                IconButton(onClick = {
-                    navController.navigate(ROUTE_ACCOUNT_MANAGEMENT_ADMIN)
-                }) {
+                IconButton(onClick = { navController.navigate(ROUTE_ACCOUNT_MANAGEMENT_ADMIN) }) {
                     Icon(imageVector = Icons.Filled.Person, contentDescription = "My Profile")
                 }
                 IconButton(onClick = {}) {
@@ -73,7 +71,6 @@ fun AddBookScreen(navController: NavController, viewModel: BookViewModel, authVi
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Cyan, titleContentColor = Color.Blue)
-
         )
 
         OutlinedTextField(
@@ -114,15 +111,19 @@ fun AddBookScreen(navController: NavController, viewModel: BookViewModel, authVi
 
                 isUploading = true
                 errorMessage = null
+
+                // Call the addBook function with default values for isReturned and returnedBy
                 viewModel.viewModelScope.launch {
                     viewModel.addBook(
                         context = context,
                         title = title,
                         description = description,
                         pdfUri = pdfUri!!,
-                        imageUri = imageUri!!, // Ensure imageUri is passed here
+                        imageUri = imageUri!!,
                         uploaderRole = "Admin",
                         availableCopies = availableCopies,
+                        isReturned = false, // Default value
+                        returnedBy = null, // Default value
                         onSuccess = {
                             isUploading = false
                             navController.navigate(ROUTE_VIEW_BOOKS_ADMIN)
@@ -139,12 +140,12 @@ fun AddBookScreen(navController: NavController, viewModel: BookViewModel, authVi
             Text(if (isUploading) "Uploading..." else "Upload Book")
         }
 
-
         errorMessage?.let {
             Text(text = it, color = Color.Red, modifier = Modifier.padding(16.dp))
         }
     }
 }
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

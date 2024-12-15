@@ -257,6 +257,38 @@ class AuthViewModel: ViewModel(){
         return email.matches(emailRegex)
     }
 
+    fun saveLoginState(context: Context, userRole: String, userId: String) {
+        val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("is_logged_in", true)  // Store login state
+        editor.putString("user_role", userRole)  // Store user role (admin or user)
+        editor.putString("user_id", userId)     // Store user ID
+        editor.apply()
+    }
+
+
+    fun getSavedLoginState(context: Context): Pair<String?, String?> {
+        val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        val isLoggedIn = sharedPreferences.getBoolean("is_logged_in", false)
+        val userRole = sharedPreferences.getString("user_role", null)
+        val userId = sharedPreferences.getString("user_id", null)
+
+        return if (isLoggedIn) {
+            Pair(userRole, userId)
+        } else {
+            Pair(null, null)
+        }
+    }
+
+    fun clearLoginState(context: Context) {
+        val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.clear() // Clear all stored data
+        editor.apply()
+    }
+
+
+
     fun fetchUser(){
         viewModelScope.launch {
             _authState.value = AuthState.Loading

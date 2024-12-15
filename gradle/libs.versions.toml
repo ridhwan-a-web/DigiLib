@@ -1,6 +1,7 @@
 [versions]
 cloudinaryAndroid = "1.30.0"
 coilComposeVersion = "2.2.2"
+playServicesLocation = "21.3.0"
 supabase = "3.0.3"
 agp = "8.7.3"
 kotlin = "2.0.0"
@@ -28,6 +29,7 @@ firebaseStorage = "21.0.1"
 supabaseKt = "3.0.3"
 playServicesBase = "18.0.1"
 supabaseKtVersion = "3.0.3"
+media3CommonKtx = "1.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -61,10 +63,12 @@ androidx-foundation-android = { group = "androidx.compose.foundation", name = "f
 androidx-foundation-layout-android = { group = "androidx.compose.foundation", name = "foundation-layout-android", version.ref = "foundationLayoutAndroid" }
 androidx-storage = { group = "androidx.test.services", name = "storage", version.ref = "storage" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 supabase-kt = { module = "io.github.jan-tennert.supabase-kt:library", version.ref = "supabaseKt" }
 play-services-base = { group = "com.google.android.gms", name = "play-services-base", version.ref = "playServicesBase" }
 supabase-kt-v100 = { module = "io.supabase:supabase-kt", version.ref = "supabaseKtVersion" }
 supabase-supabase-kt = { module = "io.supabase:supabase-kt" }
+androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

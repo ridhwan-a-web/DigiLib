@@ -2,21 +2,27 @@ package com.example.digilib.ui.theme.screens.admin.dashBoard
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -25,20 +31,41 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.util.Log
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.digilib.R
 import com.example.digilib.data.AuthViewModel
+import com.example.digilib.data.BookViewModel
+import com.example.digilib.model.Book
 import com.example.digilib.navigation.ROUTE_ACCOUNT_MANAGEMENT_ADMIN
 import com.example.digilib.navigation.ROUTE_ADD_BOOK
 import com.example.digilib.navigation.ROUTE_ADMIN_LOGIN
-import com.example.digilib.navigation.ROUTE_BORROWED_BOOKS_ADMIN
+import com.example.digilib.navigation.ROUTE_READING_ADMIN
 import com.example.digilib.navigation.ROUTE_VIEW_BOOKS_ADMIN
 import com.example.digilib.navigation.ROUTE_VIEW_USERS
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= viewModel()) {
+fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= viewModel(), viewModel: BookViewModel = viewModel(), onBookClick: (Book) -> Unit) {
+
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchReturnedBooks { errorMessage ->
+            // Handle errors here (if any)
+            Log.e("AdminDashboard", "Error fetching returned books: $errorMessage")
+        }
+    }
+
+    // Observe the borrowedBooks list as state
+    val borrowedBooks by viewModel.borrowedBooks.collectAsState()
+
+    val returnedBooks by viewModel.returnedBooks.collectAsState()
+
+
     Box {
         Image(
             painter = painterResource(id = R.drawable.blackbg),
@@ -64,7 +91,7 @@ fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= v
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") // Change icon to ArrowBack
                     }
                 },
-                title = { Text(text = "LitSphere") },
+                title = { Text(text = "DigiLib") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Cyan,
                     titleContentColor = Color.Blue,
@@ -76,11 +103,9 @@ fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= v
                     }) {
                         Icon(imageVector = Icons.Filled.Person, contentDescription = "My Profile")
                     }
-                    IconButton(onClick = {}) {
-                        Icon(imageVector = Icons.Filled.Search, contentDescription = "Search Here")
-                    }
                     IconButton(onClick = {
                         authViewModel.signOut(navController)
+                        authViewModel.clearLoginState(context)
                         navController.navigate(ROUTE_ADMIN_LOGIN)
                     }) {
                         Icon(imageVector = Icons.Filled.ExitToApp, contentDescription = "LogOut")
@@ -248,7 +273,7 @@ fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= v
                         .weight(1f)
                         .aspectRatio(0.7f)
                         .clickable {
-                            navController.navigate(ROUTE_BORROWED_BOOKS_ADMIN)
+                            navController.navigate(ROUTE_READING_ADMIN)
                         },
                     colors = CardDefaults.cardColors(
                         containerColor = Color.White.copy(alpha = 0.2f)
@@ -263,13 +288,13 @@ fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= v
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.bookdisplay),
-                            contentDescription = "View Borrowed Books",
+                            contentDescription = "View currently reading Books",
                             modifier = Modifier.size(80.dp),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "VIEW BORROWED BOOKS",
+                            text = "CURRENTLY READING BOOKS",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodyLarge,
@@ -279,77 +304,41 @@ fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= v
                 }
             }
         }
+        // LazyRow to display the returned books
         item {
-            Text(
-                text = "Notifications:",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Row {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                        .weight(1f)
-                        .aspectRatio(2.0f),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.2f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(10.dp)
-                ) {
+            Log.d("AdminDashboard", "Returned books size: ${returnedBooks.size}")
+            if (returnedBooks.isEmpty()) {
+                Text("No returned books available", color = Color.White)
+            }
+            // Using LazyRow to display the books horizontally
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp).border(1.dp, Color.Red)
+            ) {
+                items(returnedBooks) { book ->  // `returnedBooks` should be fetched based on existing fields
+                    Card(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .width(200.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Displaying the book title
+                            Text(book.title, style = MaterialTheme.typography.titleMedium)
 
+                            // Display any other relevant fields from the existing Book model
+                            Text("Available Copies: ${book.availableCopies}")
+                        }
+                    }
                 }
             }
         }
-        item {
-            Text(
-                text = "Book Requests:",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Row {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                        .weight(1f)
-                        .aspectRatio(2.0f),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.2f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(10.dp)
-                ) {
 
-                }
-            }
-        }
-        item {
-            Text(
-                text = "Reminders:",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Row {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                        .weight(1f)
-                        .aspectRatio(2.0f),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.2f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(10.dp)
-                ) {
-
-                }
-            }
-        }
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AdminDashboardPreview() {
-    AdminDashboard(rememberNavController())
+    AdminDashboard(rememberNavController(),viewModel= viewModel(), onBookClick = {})
 }

@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -61,6 +62,9 @@ fun UserLoginScreen(navController: NavController, authViewModel: AuthViewModel =
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+
 
     val authState by authViewModel.authState.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -162,6 +166,7 @@ fun UserLoginScreen(navController: NavController, authViewModel: AuthViewModel =
             onClick = {
                 keyboardController?.hide()
                 authViewModel.userLogin(email, password)
+                authViewModel.saveLoginState(context, userRole = "", userId = "")
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White.copy(alpha = 1f), // Adjust opacity as needed
