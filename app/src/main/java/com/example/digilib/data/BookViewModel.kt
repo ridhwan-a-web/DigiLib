@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.digilib.model.Book
 import com.example.digilib.cloudinaryInstance.cloudinary
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class BookViewModel : ViewModel() {
-    val firestore = FirebaseFirestore.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
     private val userId = FirebaseAuth.getInstance().currentUser?.uid
 
     private val _books = MutableStateFlow<List<Book>>(emptyList())
@@ -60,7 +61,7 @@ class BookViewModel : ViewModel() {
         imageUri: Uri,
         uploaderRole: String,
         availableCopies: Int,
-        isReturned: Boolean = false,
+        returned: Boolean = false,
         returnedBy: String? = null,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -70,16 +71,12 @@ class BookViewModel : ViewModel() {
                 if (!fileExists(context, pdfUri) || !fileExists(context, imageUri)) {
                     throw Exception("Selected files are invalid or inaccessible")
                 }
-                Log.d("BookViewModel", "PDF file exists: ${fileExists(context, pdfUri)}")
-                Log.d("BookViewModel", "Image file exists: ${fileExists(context, imageUri)}")
 
                 // Upload PDF
                 val pdfUrl: String
                 try {
                     pdfUrl = uploadFileToCloudinary(context, pdfUri, "book.pdf", "auto")
-                    Log.d("BookViewModel", "PDF uploaded successfully: $pdfUrl")
                 } catch (e: Exception) {
-                    Log.e("BookViewModel", "Error uploading PDF: ${e.message}", e)
                     onError("Error uploading PDF: ${e.message}")
                     return@launch
                 }
@@ -88,9 +85,7 @@ class BookViewModel : ViewModel() {
                 val imageUrl: String
                 try {
                     imageUrl = uploadFileToCloudinary(context, imageUri, "cover.jpg", "image")
-                    Log.d("BookViewModel", "Image uploaded successfully: $imageUrl")
                 } catch (e: Exception) {
-                    Log.e("BookViewModel", "Error uploading image: ${e.message}", e)
                     onError("Error uploading image: ${e.message}")
                     return@launch
                 }
@@ -99,20 +94,18 @@ class BookViewModel : ViewModel() {
                 val book = Book(
                     title = title,
                     description = description,
-                    pdfUrl = pdfUri.toString(),
-                    imageUrl = imageUri.toString(),
+                    pdfUrl = pdfUrl,
+                    imageUrl = imageUrl,
                     uploaderRole = uploaderRole,
                     availableCopies = availableCopies,
-                    currentlyReadingUsers = emptyList(), // Or get the list of currently reading users
-                    isReturned = isReturned,
+                    currentlyReadingUsers = emptyList(),
+                    returned = returned,
                     returnedBy = returnedBy
                 )
                 firestore.collection("books").add(book).await()
-                Log.d("BookViewModel", "Book object uploaded to Firestore: $book")
                 onSuccess()
 
             } catch (e: Exception) {
-                Log.e("BookViewModel", "Error in addBook: ${e.message}", e)
                 onError("Error occurred: ${e.message}")
             }
         }
@@ -149,31 +142,19 @@ class BookViewModel : ViewModel() {
     fun addToCurrentlyReading(book: Book, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                // Check if the user is already reading the book
                 if (book.currentlyReadingUsers.contains(userId)) {
                     onError("You are already reading this book.")
                     return@launch
                 }
 
-                // Check if there are available copies of the book
                 if (book.availableCopies > 0) {
-                    // Update the book's status in the books collection
-                    val updatedBook = book.copy(
-                        availableCopies = book.availableCopies - 1,
-                        currentlyReadingUsers = book.currentlyReadingUsers + userId
-                    )
-
-                    // Update Firestore with the new book status
-                    firestore.collection("books").document(book.id).set(updatedBook).await()
-
-                    // Add the book to the user's borrowedBooks subcollection
-                    firestore.collection("users")
-                        .document(userId ?: "")
-                        .collection("borrowedBooks")
-                        .document(book.id)
-                        .set(updatedBook) // Store the same book data or any relevant details you want
-                        .await()
-
+                    book.id?.let {
+                        firestore.collection("books").document(it)
+                            .update(
+                                "availableCopies", FieldValue.increment(-1),
+                                "currentlyReadingUsers", FieldValue.arrayUnion(userId)
+                            ).await()
+                    }
                     onSuccess()
                 } else {
                     onError("No copies available to add to Currently Reading.")
@@ -184,33 +165,104 @@ class BookViewModel : ViewModel() {
         }
     }
 
-
-    // Return a book and update its status
-    fun returnBook(book: Book, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    // Fetch all books currently being read by the user
+    fun fetchUserCurrentlyReadingBooks(onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                // Mark the book as returned
-                val updatedBook = book.copy(isReturned = true)
+                if (userId == null) {
+                    onError("User is not logged in.")
+                    return@launch
+                }
 
-                // Update Firestore with the new status
-                firestore.collection("books").document(book.id).set(updatedBook).await()
+                val userBooks = firestore.collection("books")
+                    .whereArrayContains("currentlyReadingUsers", userId)
+                    .whereEqualTo("returned", false) // Only fetch books not returned
+                    .get()
+                    .await()
+                    .documents.mapNotNull { doc ->
+                        doc.toObject(Book::class.java)?.copy(id = doc.id)
+                    }
 
-                // Remove from borrowedBooks
-                _borrowedBooks.value = _borrowedBooks.value.filterNot { it.id == book.id }
+                withContext(Dispatchers.Main) {
+                    _borrowedBooks.value = userBooks
+                }
 
-                onSuccess()
+                Log.d("BookViewModel", "Fetched currently reading books: $userBooks")
+
+                if (userBooks.isEmpty()) {
+                    Log.w("BookViewModel", "No books currently being read by the user.")
+                }
             } catch (e: Exception) {
-                onError("Failed to return the book: ${e.message}")
+                Log.e("BookViewModel", "Error fetching currently reading books: ${e.message}")
+                onError("Error fetching currently reading books: ${e.message}")
             }
         }
     }
+
+    fun fetchAllCurrentlyReadingBooks(onError: (String) -> Unit, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                // Query Firestore to get all books
+                val querySnapshot = firestore.collection("books")
+                    .get()
+                    .await()
+
+                val booksList = querySnapshot.documents.mapNotNull { doc ->
+                    val book = doc.toObject(Book::class.java)
+                    if (book?.currentlyReadingUsers?.any { it != null } == true) {
+                        book.copy(id = doc.id)
+                    } else {
+                        null
+                    }
+                }
+
+                // Update the UI state with the fetched books
+                withContext(Dispatchers.Main) {
+                    _borrowedBooks.value = booksList
+                    onSuccess()  // Call onSuccess when data is successfully fetched
+                }
+            } catch (e: Exception) {
+                // Handle error
+                onError("Error fetching currently reading books: ${e.message}")
+            }
+        }
+    }
+
+
+
+
+
+    fun returnBook(
+        book: Book,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                book.id?.let {
+                    firestore.collection("books").document(it)
+                        .update(
+                            "availableCopies", FieldValue.increment(1),
+                            "currentlyReadingUsers", FieldValue.arrayRemove(userId),
+                            "returned", true,
+                            "returnedBy", userId
+                        ).await()
+                }
+
+                onSuccess()
+            } catch (e: Exception) {
+                onError("Error returning book: ${e.message}")
+            }
+        }
+    }
+
 
     // Fetch all returned books (marked as done)
     fun fetchReturnedBooks(onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 val returnedBooks = firestore.collection("books")
-                    .whereEqualTo("isReturned", true)  // Filter returned books
+                    .whereEqualTo("returned", true) // Filter returned books
                     .get()
                     .await()
                     .documents.mapNotNull { doc ->
@@ -222,80 +274,6 @@ class BookViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 onError("Error fetching returned books: ${e.message}")
-            }
-        }
-    }
-
-    // Fetch all books currently being read by the user
-    fun fetchUserCurrentlyReadingBooks(onError: (String) -> Unit) {
-        viewModelScope.launch {
-            try {
-                // Ensure userId is not null before proceeding
-                if (userId == null) {
-                    onError("User is not logged in.")
-                    return@launch
-                }
-
-                val userBooks = firestore.collection("books")
-                    .whereArrayContains("currentlyReadingUsers", userId)
-                    .whereEqualTo("isReturned", false) // Only fetch books not returned
-                    .get()
-                    .await()
-                    .documents.mapNotNull { doc ->
-                        doc.toObject(Book::class.java)?.copy(id = doc.id)
-                    }
-
-                // Log for debugging
-                Log.d("BookViewModel", "Fetched currently reading books: $userBooks")
-
-                // Check if we fetched any books
-                if (userBooks.isEmpty()) {
-                    Log.w("BookViewModel", "No books currently being read by the user.")
-                }
-
-                withContext(Dispatchers.Main) {
-                    _borrowedBooks.value = userBooks
-                }
-            } catch (e: Exception) {
-                Log.e("BookViewModel", "Error fetching currently reading books: ${e.message}", e)
-                onError("Error fetching currently reading books: ${e.message}")
-            }
-        }
-    }
-
-
-    // Fetch all books currently being read (all users)
-    fun fetchAllCurrentlyReadingBooks(onError: (String) -> Unit) {
-        viewModelScope.launch {
-            Log.d("BookViewModel", "User ID: $userId")
-            try {
-                if (userId == null) {
-                    onError("User is not logged in.")
-                    Log.e("BookViewModel", "User ID is null. Cannot fetch currently reading books.")
-                    return@launch
-                }
-
-                // Query Firestore
-                val userBooks = firestore.collection("books")
-                    .whereArrayContains("currentlyReadingUsers", userId)
-                    .whereEqualTo("isReturned", false)
-                    .get()
-                    .await()
-                    .documents.mapNotNull { doc ->
-                        doc.toObject(Book::class.java)?.copy(id = doc.id)
-                    }
-
-                // Handle empty result
-                if (userBooks.isEmpty()) {
-                    Log.w("BookViewModel", "No books currently being read by the user.")
-                }
-
-                withContext(Dispatchers.Main) {
-                    _borrowedBooks.value = userBooks
-                }
-            } catch (e: Exception) {
-                Log.e("BookViewModel", "Error fetching currently reading books: ${e.message}", e)
-                onError("Error fetching currently reading books: ${e.message}")
             }
         }
     }

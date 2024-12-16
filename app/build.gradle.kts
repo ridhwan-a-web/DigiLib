@@ -91,12 +91,13 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation ("androidx.compose.ui:ui-text:1.7.6")
-    implementation ("androidx.compose.material3:material3:1.3.1")
-    implementation("androidx.compose.material3:material3:1.1.2")
+    implementation (libs.androidx.ui.text)
+    implementation (libs.material3)
+//    implementation("androidx.compose.material3:material3:1.1.2")
 
 //    google play services
-    implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation(libs.play.services.auth)
+//    implementation(libs.play.services.location)
     implementation(libs.play.services.location)
 
 //    dependencies of the splash screen

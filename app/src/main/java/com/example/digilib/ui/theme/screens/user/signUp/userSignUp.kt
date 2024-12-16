@@ -56,7 +56,6 @@ fun UserSignUpScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var customImageUrl by remember{ mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
     val  context = LocalContext.current
 
     val authState by authViewModel.authState.collectAsState()
@@ -145,12 +144,6 @@ fun UserSignUpScreen(
             modifier = Modifier.fillMaxWidth(),
             label = {Text(text = "Password:", color = Color.White)},
             placeholder = {Text(text="Enter a custom Password:", color = Color.White)}
-//            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-//            trailingIcon = {
-//                IconButton(onClick = {showPassword = !showPassword}) {
-//                    Icon(imageVector = if (showPassword) Icons.Default.Visibility, contentDescription = null)
-//                }
-//            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))

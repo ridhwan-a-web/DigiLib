@@ -151,12 +151,6 @@ fun AdminSignUpScreen(navController: NavController, authViewModel: AuthViewModel
             modifier = Modifier.fillMaxWidth(),
             label = {Text(text = "Password:", color = Color.White)},
             placeholder = {Text(text="Enter a custom Password:", color = Color.White)}
-//          visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
-//              trailingIcon = {
-//                IconButton(onClick = {showPassword = !showPassword}) {
-//                    Icon(imageVector = if (showPassword) Icons.Default.Visibility, contentDescription = null)
-//                }
-//            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))

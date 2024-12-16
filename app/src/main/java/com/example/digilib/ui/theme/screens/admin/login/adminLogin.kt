@@ -55,7 +55,6 @@ fun AdminLoginScreen(navController: NavController, authViewModel: AuthViewModel 
 //    declaring the variables
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var showPassword by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
@@ -145,17 +144,7 @@ fun AdminLoginScreen(navController: NavController, authViewModel: AuthViewModel 
                 errorMessage = null // Clear error once the input changes
             },
             label = { Text(text = "Password:", color = Color.White) },
-            placeholder = { Text(text = "Enter your password", color = Color.White) },
-//            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-//            trailingIcon = {
-//                IconButton(onClick = { showPassword = !showPassword }) {
-//                    Icon(
-//                        imageVector = if (showPassword) Icons.Default.Visibility
-//                        else Icons.Default.VisibilityOff,
-//                        contentDescription = "Toggle password visibility"
-//                    )
-//                }
-//            }
+            placeholder = { Text(text = "Enter your password", color = Color.White) }
         )
 
         Spacer(modifier = Modifier.height(16.dp))

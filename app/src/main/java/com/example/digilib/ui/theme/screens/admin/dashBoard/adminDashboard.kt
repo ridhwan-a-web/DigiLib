@@ -125,7 +125,7 @@ fun AdminDashboard(navController: NavController, authViewModel: AuthViewModel= v
 
         item {
             Text(
-                text = "LitSphere",
+                text = "DigiLib",
                 color = Color.White,
                 fontStyle = FontStyle.Italic,
                 fontSize = 30.sp

@@ -122,7 +122,7 @@ fun AddBookScreen(navController: NavController, viewModel: BookViewModel, authVi
                         imageUri = imageUri!!,
                         uploaderRole = "Admin",
                         availableCopies = availableCopies,
-                        isReturned = false, // Default value
+                        returned = false, // Default value
                         returnedBy = null, // Default value
                         onSuccess = {
                             isUploading = false

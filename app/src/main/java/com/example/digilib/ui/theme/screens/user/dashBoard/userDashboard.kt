@@ -99,7 +99,7 @@ fun UserDashboard(navController: NavController, authViewModel: AuthViewModel) {
 
         item {
             Text(
-                text = "LitSphere",
+                text = "DigiLib",
                 color = Color.White,
                 fontStyle = FontStyle.Italic,
                 fontSize = 30.sp
